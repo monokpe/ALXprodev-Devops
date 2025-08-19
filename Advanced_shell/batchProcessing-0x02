@@ -1,0 +1,40 @@
+#!/bin/bash
+
+POKEMON_LIST=("bulbasaur" "ivysaur" "venusaur" "charmander" "charmeleon" "invalidpokemon")
+DATA_DIR="pokemon_data"
+mkdir -p "$DATA_DIR"
+ERROR_FILE="errors.txt"
+MAX_RETRIES=3
+RETRY_DELAY=5
+
+for pokemon in "${POKEMON_LIST[@]}"; do
+  echo "Fetching data for $pokemon..."
+  
+  retries=0
+  success=false
+  
+  while [ $retries -lt $MAX_RETRIES ]; do
+    API_URL="https://pokeapi.co/api/v2/pokemon/${pokemon,,}"
+    OUTPUT_FILE="$DATA_DIR/${pokemon,,}.json"
+    
+    response_code=$(curl -s -o "$OUTPUT_FILE" -w "%{http_code}" "$API_URL")
+    
+    if [ "$response_code" -eq 200 ]; then
+      echo "Saved data to $OUTPUT_FILE ✅"
+      success=true
+      break
+    else
+      retries=$((retries + 1))
+      echo "Request failed for $pokemon (Attempt $retries/$MAX_RETRIES). Retrying in $RETRY_DELAY seconds..."
+      sleep $RETRY_DELAY
+    fi
+  done
+  
+  if [ "$success" = false ]; then
+    echo "Timestamp: $(date) - Failed to retrieve data for $pokemon after $MAX_RETRIES attempts." >> "$ERROR_FILE"
+    echo "Failed to fetch data for $pokemon. See $ERROR_FILE for details."
+    rm -f "$OUTPUT_FILE"
+  fi
+  
+  sleep 1
+done
