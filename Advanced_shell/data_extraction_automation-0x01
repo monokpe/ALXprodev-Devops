@@ -1,22 +1,17 @@
 #!/bin/bash
 
-# Check if the data file exists
 if [ ! -f "data.json" ]; then
-  echo "Error: data.json not found. Please run apiAutomation-0x00 first."
-  exit 1
+	  echo "Error: data.json not found. Please run apiAutomation-0x00 first."
+	    exit 1
 fi
 
-# Use jq to extract the data and pipe it to awk for formatting
-jq -r '[.name, .types[0].type.name, .weight, .height] | @tsv' data.json |
-awk -F'\t' '{
-  name = $1;
-  type = $2;
-  weight = $3 / 10;  # Convert hectograms to kilograms
-  height = $4 / 10;  # Convert decimeters to meters
-  
-  # Capitalize the first letter of the name
-  name = toupper(substr(name,1,1)) substr(name,2)
+name=$(jq -r '.name' data.json)
+type=$(jq -r '.types[0].type.name' data.json)
+weight=$(jq -r '.weight' data.json)
+height=$(jq -r '.height' data.json)
 
-  # Format and print the final output
-  printf "%s is of type %s, weighs %.1fkg, and is %.1fm tall.\n", name, type, weight, height
-}'
+name_capitalized=$(echo "$name" | sed 's/./\u&/')
+formatted_weight=$(echo "$weight" | awk '{print $1 / 10}')
+formatted_height=$(echo "$height" | awk '{print $1 / 10}')
+
+echo "$name_capitalized is of type $type, weighs ${formatted_weight}kg, and is ${formatted_height}m tall."
