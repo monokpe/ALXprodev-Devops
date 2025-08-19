@@ -4,24 +4,38 @@ POKEMON_LIST=("bulbasaur" "ivysaur" "venusaur" "charmander" "charmeleon")
 DATA_DIR="pokemon_data_parallel"
 mkdir -p "$DATA_DIR"
 
-fetch_pokemon_data() {
-  local pokemon=$1
-  echo "Fetching data for $pokemon..."
-  local api_url="https://pokeapi.co/api/v2/pokemon/${pokemon,,}"
-  local output_file="$DATA_DIR/${pokemon,,}.json"
-  
-  if curl -s -f "$api_url" -o "$output_file"; then
-    echo "Saved data for $pokemon to $output_file ✅"
-  else
-    echo "Failed to fetch data for $pokemon."
-    rm -f "$output_file"
-  fi
-}
+cleanup() {
+	    echo "Interrupt received, terminating running jobs..."
+	        pids_to_kill=$(jobs -p)
+		    if [ -n "$pids_to_kill" ]; then
+			            kill $pids_to_kill
+				        fi
+					    exit 1
+				    }
 
-for pokemon in "${POKEMON_LIST[@]}"; do
-  fetch_pokemon_data "$pokemon" &
-done
+			    trap cleanup SIGINT SIGTERM
 
-wait
+			    fetch_pokemon_data() {
+				      local pokemon=$1
+				        echo "Fetching data for $pokemon..."
+					  local api_url="https://pokeapi.co/api/v2/pokemon/${pokemon,,}"
+					    local output_file="$DATA_DIR/${pokemon,,}.json"
+					      
+					      if curl -s -f "$api_url" -o "$output_file"; then
+						          echo "Saved data for $pokemon to $output_file ✅"
+							    else
+								        echo "Failed to fetch data for $pokemon."
+									    rm -f "$output_file"
+									      fi
+								      }
 
-echo "All Pokémon data has been fetched."
+							      for pokemon in "${POKEMON_LIST[@]}"; do
+								        fetch_pokemon_data "$pokemon" &
+								done
+
+								echo "All jobs launched. Current jobs:"
+								jobs
+
+								wait
+
+								echo "All Pokémon data has been fetched."
